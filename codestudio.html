@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeStudio — Universal Online IDE</title>
+
+<!-- CodeMirror 5 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/lua/lua.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/search.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+
+<!-- Runtimes -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+<script src="https://unpkg.com/typescript@latest/lib/typescript.js"></script>
+<script src="https://sql.js.org/dist/sql-wasm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fengari-web@0.1.4/dist/fengari-web.min.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;font-family:"Segoe UI",system-ui,sans-serif;background:#1e1e1e;color:#ccc}
+#app{display:flex;flex-direction:column;height:100vh}
+
+/* Toolbar */
+.toolbar{height:44px;background:#333;border-bottom:1px solid #252526;display:flex;align-items:center;justify-content:space-between;padding:0 12px;gap:8px;flex-shrink:0;user-select:none}
+.toolbar-left,.toolbar-center,.toolbar-right{display:flex;align-items:center;gap:6px}
+.logo{font-weight:700;font-size:16px;color:#fff;margin-right:10px;letter-spacing:.3px}
+button{background:#0e639c;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;transition:background .15s;display:inline-flex;align-items:center;gap:4px}
+button:hover{background:#1177bb}
+button:disabled{opacity:.45;cursor:not-allowed}
+button svg{width:14px;height:14px;fill:currentColor}
+.btn-primary{background:#238636}
+.btn-primary:hover{background:#2ea043}
+.btn-danger{background:#da3633}
+.btn-danger:hover{background:#f85149}
+.btn-ghost{background:transparent;border:1px solid #555}
+.btn-ghost:hover{background:#3c3c3c}
+
+select{background:#3c3c3c;color:#fff;border:1px solid #555;padding:5px 8px;border-radius:4px;font-size:12px;outline:none}
+
+/* Main layout */
+.main{flex:1;display:flex;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:220px;background:#252526;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+.sidebar.collapsed{width:0;overflow:hidden;border:none}
+.sidebar-header{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#bbb;border-bottom:1px solid #1e1e1e}
+.sidebar-actions{padding:8px;border-bottom:1px solid #1e1e1e}
+.file-list{flex:1;overflow-y:auto;padding:4px}
+.file-item{display:flex;align-items:center;padding:5px 8px;border-radius:4px;cursor:pointer;font-size:13px;gap:8px;transition:background .1s}
+.file-item:hover{background:#2a2d2e}
+.file-item.active{background:#37373d}
+.file-icon{width:16px;height:16px;flex-shrink:0;font-size:14px;text-align:center}
+.file-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-close{opacity:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:15px;line-height:1}
+.file-item:hover .file-close{opacity:1}
+.file-close:hover{background:#c75450;color:#fff}
+
+/* Editor area */
+.editor-container{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.tabs{height:36px;background:#2d2d30;display:flex;overflow-x:auto;border-bottom:1px solid #252526;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;padding:0 12px;gap:8px;font-size:12px;cursor:pointer;border-right:1px solid #252526;white-space:nowrap;color:#969696;transition:background .1s;position:relative}
+.tab:hover{background:#2a2d2e}
+.tab.active{background:#1e1e1e;color:#fff}
+.tab.active::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:#007acc}
+.tab-dirty::after{content:"\25cf";font-size:8px;color:#fff;margin-left:2px;vertical-align:top}
+.tab-close{width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:14px;margin-left:2px}
+.tab-close:hover{background:#c75450;color:#fff}
+
+.editor-wrapper{flex:1;overflow:hidden;position:relative}
+.CodeMirror{height:100%;font-family:"Consolas","Monaco","Courier New",monospace;font-size:14px;line-height:1.5}
+
+/* Preview panel */
+.preview-panel{width:420px;background:#1e1e1e;border-left:1px solid #333;display:none;flex-direction:column;flex-shrink:0}
+.preview-panel.visible{display:flex}
+.preview-header{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#252526;border-bottom:1px solid #333;font-size:12px;color:#fff}
+#preview-frame{flex:1;border:none;background:#fff;width:100%}
+
+/* Bottom panel */
+.bottom-panel{height:190px;background:#1e1e1e;border-top:1px solid #333;display:flex;flex-direction:column;flex-shrink:0;transition:height .2s}
+.bottom-panel.collapsed{height:36px;overflow:hidden}
+.bottom-header{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#252526;border-bottom:1px solid #333}
+.bottom-tabs{display:flex;gap:2px}
+.bottom-tab{padding:4px 12px;font-size:12px;cursor:pointer;border-radius:4px;color:#969696;background:transparent;border:none;transition:all .1s}
+.bottom-tab.active{color:#fff;background:#1e1e1e}
+.bottom-actions{display:flex;gap:6px}
+.bottom-content{flex:1;overflow:hidden;position:relative}
+.panel-content{position:absolute;top:0;left:0;right:0;bottom:0;overflow:auto;padding:8px;display:none;font-family:"Consolas",monospace;font-size:13px;line-height:1.5}
+.panel-content.active{display:block}
+
+#output-content{background:#1e1e1e;color:#d4d4d4}
+.output-line{padding:2px 0;border-bottom:1px solid #2d2d30;animation:fadeIn .15s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:none}}
+.output-time{color:#858585;margin-right:8px;font-size:11px;user-select:none}
+.output-log{color:#d4d4d4}
+.output-error{color:#f48771}
+.output-warn{color:#dcdcaa}
+.output-success{color:#4ec9b0}
+.output-info{color:#569cd6}
+.output-code{color:#ce9178;white-space:pre}
+
+.sql-table{border-collapse:collapse;width:100%;margin:6px 0;font-size:12px}
+.sql-table th,.sql-table td{border:1px solid #444;padding:5px 10px;text-align:left}
+.sql-table th{background:#252526;color:#569cd6;font-weight:600}
+.sql-table tr:nth-child(even){background:#1e1e1e}
+.sql-table tr:nth-child(odd){background:#252526}
+
+/* Status bar */
+.status-bar{height:22px;background:#007acc;color:#fff;display:flex;align-items:center;padding:0 12px;font-size:12px;gap:20px;flex-shrink:0;user-select:none}
+.status-bar span{display:flex;align-items:center;gap:6px}
+
+/* Modal */
+.modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(4px)}
+.modal.hidden{display:none}
+.modal-content{background:#252526;border:1px solid #444;border-radius:10px;padding:32px;max-width:700px;width:92%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-content h1{margin-bottom:6px;color:#fff;font-size:28px}
+.modal-content p{margin-bottom:24px;color:#bbb;font-size:14px}
+.lang-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px}
+.lang-card{background:#1e1e1e;border:1px solid #333;border-radius:8px;padding:14px 6px;cursor:pointer;transition:all .15s}
+.lang-card:hover{border-color:#007acc;transform:translateY(-3px);background:#2d2d30;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.lang-card-icon{font-size:26px;margin-bottom:6px;display:block}
+.lang-card-name{font-size:12px;color:#fff;font-weight:500}
+.modal-actions{display:flex;gap:10px;justify-content:center}
+
+/* Scrollbars */
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:#1e1e1e}
+::-webkit-scrollbar-thumb{background:#424242;border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:#4f4f4f}
+
+/* Responsive */
+@media(max-width:900px){.sidebar{width:180px}.preview-panel{width:320px}}
+@media(max-width:700px){.sidebar{display:none}.preview-panel{position:fixed;top:44px;right:0;bottom:190px;width:100%;z-index:50}}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="logo">&#9670; CodeStudio</div>
+      <button id="btn-new" title="New File (Ctrl+N)">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+        New
+      </button>
+      <button id="btn-open" title="Open File (Ctrl+O)">
+        <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+        Open
+      </button>
+      <button id="btn-save" title="Save to Browser (Ctrl+S)">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+        Save
+      </button>
+      <button id="btn-download" title="Download File">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Download
+      </button>
+    </div>
+    <div class="toolbar-center">
+      <select id="lang-select" title="Programming Language"></select>
+      <button id="btn-run" class="btn-primary" title="Run Code (Ctrl+Enter / F5)">
+        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        Run
+      </button>
+      <button id="btn-stop" class="btn-danger" title="Stop Execution" disabled>
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+        Stop
+      </button>
+    </div>
+    <div class="toolbar-right">
+      <button id="btn-copy-all" title="Copy All Code">
+        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        Copy All
+      </button>
+      <button id="btn-select-all" title="Select All (Ctrl+A)">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"></path></svg>
+        Select All
+      </button>
+      <button id="btn-paste" title="Paste at Cursor">
+        <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+        Paste
+      </button>
+      <button id="btn-find" title="Find / Replace (Ctrl+F)">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        Find
+      </button>
+      <button id="btn-theme" class="btn-ghost" title="Toggle Theme">&#127769;</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <span>Explorer</span>
+        <button id="btn-collapse-sidebar" style="padding:2px 6px;background:transparent;border:none;color:#bbb;font-size:16px">&#8249;</button>
+      </div>
+      <div class="sidebar-actions">
+        <button id="btn-new-file-sidebar" style="width:100%;justify-content:center">+ New File</button>
+      </div>
+      <div class="file-list" id="file-list"></div>
+    </div>
+
+    <!-- Editor -->
+    <div class="editor-container">
+      <div class="tabs" id="tabs"></div>
+      <div class="editor-wrapper" id="editor-wrapper"></div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-panel" id="preview-panel">
+      <div class="preview-header">
+        <span>Preview</span>
+        <button id="btn-close-preview" style="background:transparent;border:none;color:#fff;font-size:18px;cursor:pointer;padding:0 4px">&#215;</button>
+      </div>
+      <iframe id="preview-frame" sandbox="allow-scripts"></iframe>
+    </div>
+  </div>
+
+  <!-- Bottom Panel -->
+  <div class="bottom-panel" id="bottom-panel">
+    <div class="bottom-header">
+      <div class="bottom-tabs">
+        <button class="bottom-tab active" data-panel="output">Output / Console</button>
+        <button class="bottom-tab" data-panel="preview">Preview</button>
+      </div>
+      <div class="bottom-actions">
+        <button id="btn-clear-output" class="btn-ghost">Clear</button>
+        <button id="btn-collapse-bottom" class="btn-ghost" title="Toggle Panel">&#9472;</button>
+      </div>
+    </div>
+    <div class="bottom-content">
+      <div id="output-content" class="panel-content active"></div>
+      <div id="preview-content" class="panel-content"></div>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span id="status-lang">Ready</span>
+    <span id="status-cursor">Ln 1, Col 1</span>
+    <span id="status-encoding">UTF-8</span>
+    <span id="status-ready">CodeStudio</span>
+  </div>
+</div>
+
+<!-- Hidden file input -->
+<input type="file" id="file-input" multiple accept=".js,.py,.html,.htm,.css,.ts,.sql,.json,.md,.lua,.c,.cpp,.txt,.jsx,.tsx" style="display:none">
+
+<!-- Welcome Modal -->
+<div id="welcome-modal" class="modal">
+  <div class="modal-content">
+    <h1>Welcome to CodeStudio</h1>
+    <p>Choose a language to start coding, open an existing file, or start blank.</p>
+    <div class="lang-grid" id="lang-grid"></div>
+    <div class="modal-actions">
+      <button id="btn-open-welcome" class="btn-ghost" style="padding:8px 20px">&#128450; Open File</button>
+      <button id="btn-blank-welcome" style="padding:8px 20px;background:#444;border:1px solid #555">&#128196; Blank File</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================
+   CodeStudio - Core Engine
+   ============================ */
+
+const LANGUAGES = {
+  javascript: {
+    name: "JavaScript", mode: "javascript", ext: "js", runnable: true,
+    icon: "\u26A1",
+    template: `console.log("Hello, JavaScript!");\n\n// Try editing this code and press Run\nfunction factorial(n) {\n  return n <= 1 ? 1 : n * factorial(n - 1);\n}\n\nfor (let i = 1; i <= 5; i++) {\n  console.log(\`factorial(\${i}) = \${factorial(i)}\`);\n}`
+  },
+  python: {
+    name: "Python", mode: "python", ext: "py", runnable: true, needsPyodide: true,
+    icon: "\uD83D\uDC0D",
+    template: `print("Hello, Python!")\n\n# Try editing this code and press Run\ndef factorial(n):\n    return 1 if n <= 1 else n * factorial(n - 1)\n\nfor i in range(1, 6):\n    print(f"factorial({i}) = {factorial(i)}")`
+  },
+  html: {
+    name: "HTML", mode: "xml", ext: "html", runnable: true,
+    icon: "\uD83C\uDF10",
+    template: `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>My Page</title>\n  <style>\n    body {\n      font-family: system-ui, sans-serif;\n      background: linear-gradient(135deg, #667eea, #764ba2);\n      color: white;\n      padding: 40px;\n      min-height: 100vh;\n      margin: 0;\n    }\n    h1 { font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }\n    .card {\n      background: rgba(255,255,255,0.1);\n      border-radius: 12px;\n      padding: 20px;\n      backdrop-filter: blur(10px);\n      margin-top: 20px;\n    }\n  </style>\n</head>\n<body>\n  <h1>Hello, HTML!</h1>\n  <div class="card">\n    <p>Edit this code and click <strong>Run</strong> to see the live preview.</p>\n  </div>\n</body>\n</html>`
+  },
+  css: {
+    name: "CSS", mode: "css", ext: "css", runnable: true,
+    icon: "\uD83C\uDFA8",
+    template: `/* Edit the CSS to style the preview panel */\n\nbody {\n  font-family: "Segoe UI", system-ui, sans-serif;\n  background: #0f172a;\n  color: #e2e8f0;\n  padding: 40px;\n  line-height: 1.6;\n}\n\nh1 {\n  color: #38bdf8;\n  font-size: 2.2em;\n  margin-bottom: 0.2em;\n}\n\n.card {\n  background: #1e293b;\n  border: 1px solid #334155;\n  border-radius: 12px;\n  padding: 24px;\n  margin-top: 16px;\n  box-shadow: 0 10px 30px rgba(0,0,0,0.3);\n}\n\nbutton {\n  background: #38bdf8;\n  color: #0f172a;\n  border: none;\n  padding: 10px 20px;\n  border-radius: 6px;\n  font-weight: 600;\n  cursor: pointer;\n}`
+  },
+  typescript: {
+    name: "TypeScript", mode: "javascript", ext: "ts", runnable: true,
+    icon: "\uD83D\uDD37",
+    template: `const greeting: string = "Hello, TypeScript!";\nconsole.log(greeting);\n\n// Types are stripped during compilation\ninterface User {\n  id: number;\n  name: string;\n  active: boolean;\n}\n\nconst users: User[] = [\n  { id: 1, name: "Alice", active: true },\n  { id: 2, name: "Bob", active: false }\n];\n\nusers.forEach(u => {\n  console.log(\`User \${u.name} is \${u.active ? "active" : "inactive"}\`);\n});`
+  },
+  sql: {
+    name: "SQL", mode: "sql", ext: "sql", runnable: true, needsSqlJs: true,
+    icon: "\uD83D\uDDC3",
+    template: `-- Create tables and run queries\nCREATE TABLE users (\n  id INTEGER PRIMARY KEY,\n  name TEXT NOT NULL,\n  age INTEGER,\n  city TEXT\n);\n\nINSERT INTO users (name, age, city) VALUES\n  ("Alice", 30, "New York"),\n  ("Bob", 25, "London"),\n  ("Charlie", 35, "Tokyo"),\n  ("Diana", 28, "Paris");\n\nSELECT * FROM users WHERE age > 26 ORDER BY age DESC;\n\n-- Try your own queries below`
+  },
+  json: {
+    name: "JSON", mode: "javascript", ext: "json", runnable: true,
+    icon: "\uD83D\uDCCB",
+    template: `{\n  "project": "CodeStudio",\n  "version": 2.0,\n  "online": true,\n  "features": [\n    "Syntax Highlighting",\n    "Live Execution",\n    "File Management",\n    "Multi-Language Support"\n  ],\n  "author": {\n    "name": "Developer",\n    "active": true,\n    "role": null\n  },\n  "stats": {\n    "languages": 10,\n    "linesOfCode": 1500\n  }\n}`
+  },
+  markdown: {
+    name: "Markdown", mode: "markdown", ext: "md", runnable: true,
+    icon: "\uD83D\uDCDD",
+    template: `# Hello, Markdown!\n\nThis is a **live preview** editor with real-time rendering.\n\n## Features\n- *Italic* and **bold** text\n- [Links](https://example.com)\n- \`inline code\` formatting\n- Code blocks with syntax highlighting\n\n## JavaScript Example\n\`\`\`javascript\nconsole.log("Syntax highlighting works!");\n\`\`\`\n\n> "Blockquotes are rendered beautifully."\n\nEnjoy writing in Markdown!`
+  },
+  lua: {
+    name: "Lua", mode: "lua", ext: "lua", runnable: true,
+    icon: "\uD83C\uDF19",
+    template: `print("Hello, Lua!")\n\n-- Lua tables\nlocal fruits = {"Apple", "Banana", "Cherry", "Date"}\nfor i, fruit in ipairs(fruits) do\n    print(i, fruit)\nend\n\n-- Functions\nfunction greet(name)\n    return "Hello, " .. name .. "!"\nend\n\nprint(greet("World"))\n\n-- Math\nprint("2^8 =", 2^8)`
+  },
+  c: {
+    name: "C / C++", mode: "text/x-csrc", ext: "c", runnable: false,
+    icon: "\u2699",
+    template: `#include <stdio.h>\n\nint factorial(int n) {\n    return (n <= 1) ? 1 : n * factorial(n - 1);\n}\n\nint main() {\n    printf("Hello, C!\\n");\n    \n    for (int i = 1; i <= 5; i++) {\n        printf("factorial(%d) = %d\\n", i, factorial(i));\n    }\n    \n    return 0;\n}`
+  }
+};
+
+/* ---------- State ---------- */
+let files = [];
+let activeFileId = null;
+let editor = null;
+let isRunning = false;
+let executionFrame = null;
+let messageHandler = null;
+let pyodide = null;
+let sqlJs = null;
+let nextId = 1;
+let isBottomCollapsed = false;
+
+/* ---------- DOM Cache ---------- */
+const els = {};
+
+function cacheElements() {
+  els.editorWrapper = document.getElementById('editor-wrapper');
+  els.fileList = document.getElementById('file-list');
+  els.tabs = document.getElementById('tabs');
+  els.output = document.getElementById('output-content');
+  els.langSelect = document.getElementById('lang-select');
+  els.welcome = document.getElementById('welcome-modal');
+  els.previewPanel = document.getElementById('preview-panel');
+  els.previewFrame = document.getElementById('preview-frame');
+  els.bottomPanel = document.getElementById('bottom-panel');
+  els.sidebar = document.getElementById('sidebar');
+}
+
+/* ---------- Init ---------- */
+function init() {
+  cacheElements();
+
+  editor = CodeMirror(els.editorWrapper, {
+    lineNumbers: true,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    styleActiveLine: true,
+    foldGutter: true,
+    gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+    theme: 'dracula',
+    indentUnit: 2,
+    tabSize: 2,
+    lineWrapping: true,
+    extraKeys: {
+      "Ctrl-S": function(cm) { saveToLocalStorage(); showStatus("Saved to browser storage"); return false; },
+      "Ctrl-O": function(cm) { document.getElementById('file-input').click(); return false; },
+      "Ctrl-N": function(cm) { showWelcome(); return false; },
+      "Ctrl-Enter": runCode,
+      "F5": runCode,
+      "Ctrl-F": "findPersistent",
+      "Ctrl-H": "replace",
+      "Ctrl-/": "toggleComment",
+      "Shift-Ctrl-F": "replaceAll",
+      "Shift-Tab": "indentLess",
+      "Ctrl-Space": "autocomplete"
+    }
+  });
+
+  editor.on('change', onEditorChange);
+  editor.on('cursorActivity', updateStatusBar);
+
+  Object.entries(LANGUAGES).forEach(function(entry) {
+    var opt = document.createElement('option');
+    opt.value = entry[0];
+    opt.textContent = entry[1].name;
+    els.langSelect.appendChild(opt);
+  });
+
+  var grid = document.getElementById('lang-grid');
+  Object.entries(LANGUAGES).forEach(function(entry) {
+    var card = document.createElement('div');
+    card.className = 'lang-card';
+    card.innerHTML = '<span class="lang-card-icon">' + entry[1].icon + '</span><div class="lang-card-name">' + entry[1].name + '</div>';
+    card.onclick = function() { createNewFile(entry[0]); hideWelcome(); };
+    grid.appendChild(card);
+  });
+
+  document.getElementById('btn-new').onclick = showWelcome;
+  document.getElementById('btn-open').onclick = function() { document.getElementById('file-input').click(); };
+  document.getElementById('btn-save').onclick = function() { saveToLocalStorage(); };
+  document.getElementById('btn-download').onclick = downloadFile;
+  document.getElementById('btn-run').onclick = runCode;
+  document.getElementById('btn-stop').onclick = stopCode;
+  document.getElementById('btn-copy-all').onclick = copyAll;
+  document.getElementById('btn-select-all').onclick = function() { editor.execCommand('selectAll'); };
+  document.getElementById('btn-paste').onclick = pasteAtCursor;
+  document.getElementById('btn-find').onclick = function() { editor.execCommand('findPersistent'); };
+  document.getElementById('btn-clear-output').onclick = clearOutput;
+  document.getElementById('btn-theme').onclick = toggleTheme;
+  document.getElementById('btn-collapse-sidebar').onclick = toggleSidebar;
+  document.getElementById('btn-close-preview').onclick = hidePreviewPanel;
+  document.getElementById('btn-new-file-sidebar').onclick = showWelcome;
+  document.getElementById('btn-open-welcome').onclick = function() { document.getElementById('file-input').click(); hideWelcome(); };
+  document.getElementById('btn-blank-welcome').onclick = function() { createNewFile('javascript'); hideWelcome(); };
+  document.getElementById('file-input').onchange = handleFileOpen;
+  document.getElementById('btn-collapse-bottom').onclick = toggleBottomPanel;
+
+  els.langSelect.onchange = function() {
+    if (activeFileId) {
+      var file = files.find(function(f) { return f.id === activeFileId; });
+      if (file) {
+        file.language = els.langSelect.value;
+        setEditorMode(file.language);
+        updateStatusBar();
+      }
+    }
+  };
+
+  document.querySelectorAll('.bottom-tab').forEach(function(tab) {
+    tab.onclick = function() {
+      document.querySelectorAll('.bottom-tab').forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      document.querySelectorAll('.panel-content').forEach(function(p) { p.classList.remove('active'); });
+      var panelId = tab.getAttribute('data-panel') + '-content';
+      var panel = document.getElementById(panelId);
+      if (panel) panel.classList.add('active');
+    };
+  });
+
+  loadFromLocalStorage();
+  if (files.length === 0) {
+    showWelcome();
+  } else {
+    if (activeFileId && files.some(function(f) { return f.id === activeFileId; })) {
+      setActiveFile(activeFileId);
+    } else {
+      setActiveFile(files[0].id);
+    }
+  }
+  updateStatusBar();
+}
+
+/* ---------- File Management ---------- */
+function createNewFile(langKey) {
+  var lang = LANGUAGES[langKey];
+  var file = {
+    id: nextId++,
+    name: 'untitled.' + lang.ext,
+    language: langKey,
+    content: lang.template || '',
+    isDirty: true
+  };
+  files.push(file);
+  renderFileList();
+  renderTabs();
+  setActiveFile(file.id);
+}
+
+function setActiveFile(id) {
+  if (activeFileId && editor) {
+    var prev = files.find(function(f) { return f.id === activeFileId; });
+    if (prev) prev.content = editor.getValue();
+  }
+  activeFileId = id;
+  var file = files.find(function(f) { return f.id === id; });
+  if (!file) return;
+  editor.setValue(file.content);
+  setEditorMode(file.language);
+  els.langSelect.value = file.language;
+  renderFileList();
+  renderTabs();
+  updateStatusBar();
+}
+
+function setEditorMode(langKey) {
+  var lang = LANGUAGES[langKey];
+  if (lang) editor.setOption('mode', lang.mode);
+}
+
+function onEditorChange() {
+  if (!activeFileId) return;
+  var file = files.find(function(f) { return f.id === activeFileId; });
+  if (file) {
+    file.content = editor.getValue();
+    file.isDirty = true;
+    renderTabs();
+  }
+}
+
+function renderFileList() {
+  els.fileList.innerHTML = '';
+  files.forEach(function(file) {
+    var item = document.createElement('div');
+    item.className = 'file-item' + (file.id === activeFileId ? ' active' : '');
+    var lang = LANGUAGES[file.language];
+    item.innerHTML = '<span class="file-icon">' + (lang ? lang.icon : '\uD83D\uDCC4') + '</span>' +
+      '<span class="file-name">' + file.name + (file.isDirty ? ' \u25CF' : '') + '</span>' +
+      '<span class="file-close" data-id="' + file.id + '">\u00D7</span>';
+    item.onclick = function(e) {
+      if (e.target.classList.contains('file-close')) {
+        closeFile(file.id);
+      } else {
+        setActiveFile(file.id);
+      }
+    };
+    els.fileList.appendChild(item);
+  });
+}
+
+function renderTabs() {
+  els.tabs.innerHTML = '';
+  files.forEach(function(file) {
+    var tab = document.createElement('div');
+    tab.className = 'tab' + (file.id === activeFileId ? ' active' : '');
+    tab.innerHTML = '<span>' + file.name + '</span>' + (file.isDirty ? '<span class="tab-dirty"></span>' : '') +
+      '<span class="tab-close" data-id="' + file.id + '">\u00D7</span>';
+    tab.onclick = function(e) {
+      if (e.target.classList.contains('tab-close')) {
+        closeFile(file.id);
+      } else {
+        setActiveFile(file.id);
+      }
+    };
+    els.tabs.appendChild(tab);
+  });
+}
+
+function closeFile(id) {
+  files = files.filter(function(f) { return f.id !== id; });
+  if (activeFileId === id) {
+    if (files.length > 0) {
+      setActiveFile(files[0].id);
+    } else {
+      activeFileId = null;
+      editor.setValue('');
+      showWelcome();
+    }
+  }
+  renderFileList();
+  renderTabs();
+}
+
+function handleFileOpen(e) {
+  var fileList = e.target.files;
+  Array.from(fileList).forEach(function(file) {
+    var reader = new FileReader();
+    reader.onload = function(event) {
+      var ext = file.name.split('.').pop().toLowerCase();
+      var langKey = 'javascript';
+      var found = Object.entries(LANGUAGES).find(function(entry) { return entry[1].ext === ext; });
+      if (found) langKey = found[0];
+      var newFile = {
+        id: nextId++,
+        name: file.name,
+        language: langKey,
+        content: event.target.result,
+        isDirty: false
+      };
+      files.push(newFile);
+      renderFileList();
+      renderTabs();
+      setActiveFile(newFile.id);
+    };
+    reader.readAsText(file);
+  });
+  e.target.value = '';
+}
+
+function downloadFile() {
+  var file = files.find(function(f) { return f.id === activeFileId; });
+  if (!file) return;
+  var blob = new Blob([file.content], { type: 'text/plain' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  a.click();
+  URL.revokeObjectURL(url);
+  showStatus('Downloaded ' + file.name);
+}
+
+function copyAll() {
+  var text = editor.getValue();
+  navigator.clipboard.writeText(text).then(function() {
+    showStatus('Copied entire file to clipboard');
+  }).catch(function() {
+    showStatus('Copy failed');
+  });
+}
+
+async function pasteAtCursor() {
+  try {
+    var text = await navigator.clipboard.readText();
+    editor.replaceSelection(text);
+    showStatus('Pasted from clipboard');
+  } catch(e) {
+    showStatus('Paste failed - use Ctrl+V');
+  }
+}
+
+/* ---------- Persistence ---------- */
+function saveToLocalStorage() {
+  var data = {
+    files: files.map(function(f) { return { id: f.id, name: f.name, language: f.language, content: f.content, isDirty: false }; }),
+    nextId: nextId,
+    activeFileId: activeFileId
+  };
+  localStorage.setItem('codestudio_data', JSON.stringify(data));
+  files.forEach(function(f) { f.isDirty = false; });
+  renderTabs();
+  renderFileList();
+}
+
+function loadFromLocalStorage() {
+  try {
+    var raw = localStorage.getItem('codestudio_data');
+    if (!raw) return;
+    var data = JSON.parse(raw);
+    if (data && data.files && data.files.length > 0) {
+      files = data.files;
+      nextId = data.nextId || 1;
+      activeFileId = data.activeFileId;
+    }
+  } catch(e) {
+    console.error('Load error', e);
+  }
+}
+
+/* ---------- UI Helpers ---------- */
+function showWelcome() { els.welcome.classList.remove('hidden'); }
+function hideWelcome() { els.welcome.classList.add('hidden'); }
+
+function toggleTheme() {
+  var current = editor.getOption('theme');
+  var next = current === 'dracula' ? 'default' : 'dracula';
+  editor.setOption('theme', next);
+  document.body.style.background = next === 'dracula' ? '#1e1e1e' : '#ffffff';
+  document.body.style.color = next === 'dracula' ? '#cccccc' : '#333333';
+}
+
+function toggleSidebar() {
+  els.sidebar.classList.toggle('collapsed');
+}
+
+function toggleBottomPanel() {
+  isBottomCollapsed = !isBottomCollapsed;
+  els.bottomPanel.classList.toggle('collapsed', isBottomCollapsed);
+  document.getElementById('btn-collapse-bottom').textContent = isBottomCollapsed ? '\u25A1' : '\u2500';
+}
+
+function showPreviewPanel() { els.previewPanel.classList.add('visible'); }
+function hidePreviewPanel() { els.previewPanel.classList.remove('visible'); }
+
+function updateStatusBar() {
+  var cursor = editor.getCursor();
+  document.getElementById('status-cursor').textContent = 'Ln ' + (cursor.line + 1) + ', Col ' + (cursor.ch + 1);
+  var file = files.find(function(f) { return f.id === activeFileId; });
+  var langName = file ? (LANGUAGES[file.language] ? LANGUAGES[file.language].name : file.language) : 'None';
+  document.getElementById('status-lang').textContent = langName;
+}
+
+function showStatus(msg) {
+  var el = document.getElementById('status-ready');
+  el.textContent = msg;
+  setTimeout(function() { el.textContent = 'CodeStudio'; }, 2500);
+}
+
+function clearOutput() { els.output.innerHTML = ''; }
+
+function logOutput(text, type) {
+  type = type || 'log';
+  var line = document.createElement('div');
+  line.className = 'output-line output-' + type;
+  var time = new Date().toLocaleTimeString();
+  if (type === 'table') {
+    line.innerHTML = '<span class="output-time">[' + time + ']</span> ' + text;
+  } else {
+    var span = document.createElement('span');
+    span.className = 'output-text';
+    span.textContent = String(text);
+    line.innerHTML = '<span class="output-time">[' + time + ']</span> ';
+    line.appendChild(span);
+  }
+  els.output.appendChild(line);
+  els.output.scrollTop = els.output.scrollHeight;
+}
+
+function escapeHtml(text) {
+  var div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/* ---------- Execution Engine ---------- */
+async function runCode() {
+  if (isRunning) return;
+  var file = files.find(function(f) { return f.id === activeFileId; });
+  if (!file) { logOutput('No active file.', 'warn'); return; }
+  var lang = LANGUAGES[file.language];
+  if (!lang) { logOutput('Unknown language.', 'error'); return; }
+  if (!lang.runnable) { runC(file.content); return; }
+
+  isRunning = true;
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('btn-stop').disabled = false;
+  clearOutput();
+  logOutput('Running ' + lang.name + '...', 'info');
+
+  try {
+    switch(file.language) {
+      case 'javascript': await runJavaScript(file.content); break;
+      case 'python': await runPython(file.content); break;
+      case 'html': runHtml(file.content); break;
+      case 'css': runCss(file.content); break;
+      case 'typescript': runTypeScript(file.content); break;
+      case 'sql': await runSql(file.content); break;
+      case 'json': runJson(file.content); break;
+      case 'markdown': runMarkdown(file.content); break;
+      case 'lua': runLua(file.content); break;
+      default: logOutput('Execution not available.', 'warn');
+    }
+  } catch(e) {
+    logOutput('Runtime Error: ' + e.message, 'error');
+  } finally {
+    isRunning = false;
+    document.getElementById('btn-run').disabled = false;
+    document.getElementById('btn-stop').disabled = true;
+  }
+}
+
+function stopCode() {
+  if (executionFrame) {
+    executionFrame.remove();
+    executionFrame = null;
+  }
+  if (messageHandler) {
+    window.removeEventListener('message', messageHandler);
+    messageHandler = null;
+  }
+  isRunning = false;
+  document.getElementById('btn-run').disabled = false;
+  document.getElementById('btn-stop').disabled = true;
+  logOutput('Execution stopped by user.', 'warn');
+}
+
+/* --- JavaScript Runner --- */
+function runJavaScript(code) {
+  return new Promise(function(resolve) {
+    if (executionFrame) { executionFrame.remove(); executionFrame = null; }
+    if (messageHandler) { window.removeEventListener('message', messageHandler); messageHandler = null; }
+
+    var iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.sandbox = 'allow-scripts';
+
+    messageHandler = function(e) {
+      if (e.data && e.data.source === 'codestudio') {
+        logOutput(e.data.message, e.data.type);
+      }
+    };
+    window.addEventListener('message', messageHandler);
+
+    var safeCode = code.replace(/<\/script>/gi, '<\\/script>');
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><script>' +
+      '(function(){' +
+      'function send(type,args){' +
+      'var msg=args.map(function(a){' +
+      'if(typeof a==="object"&&a!==null){try{return JSON.stringify(a,null,2)}catch(e){return String(a)}}' +
+      'return String(a);' +
+      '}).join(" ");' +
+      'window.parent.postMessage({source:"codestudio",type:type,message:msg},"*");' +
+      '}' +
+      'console.log=function(){send("log",Array.prototype.slice.call(arguments));};' +
+      'console.error=function(){send("error",Array.prototype.slice.call(arguments));};' +
+      'console.warn=function(){send("warn",Array.prototype.slice.call(arguments));};' +
+      'console.info=function(){send("info",Array.prototype.slice.call(arguments));};' +
+      'window.onerror=function(msg,url,line,col,err){send("error",[String(msg)+" (line "+line+")"]);return true;};' +
+      'window.onunhandledrejection=function(e){send("error",["Unhandled Promise Rejection: "+e.reason]);};' +
+      'try{' + safeCode + '}' +
+      'catch(e){send("error",[e.name+": "+e.message]);}' +
+      '})();' +
+      '<\/script></head><body></body></html>';
+
+    executionFrame = iframe;
+    iframe.srcdoc = html;
+    document.body.appendChild(iframe);
+    setTimeout(resolve, 80);
+  });
+}
+
+/* --- Python Runner --- */
+async function runPython(code) {
+  if (!pyodide) {
+    logOutput('Loading Pyodide WASM runtime (first run, ~20-40s)...', 'info');
+    try {
+      pyodide = await loadPyodide();
+      logOutput('Pyodide loaded successfully!', 'success');
+    } catch(e) {
+      logOutput('Failed to load Pyodide: ' + e.message, 'error');
+      return;
+    }
+  }
+  try {
+    pyodide.setStdout({ batched: function(text) { logOutput(text, 'log'); } });
+    pyodide.setStderr({ batched: function(text) { logOutput(text, 'error'); } });
+    await pyodide.runPythonAsync(code);
+    logOutput('Python execution completed.', 'success');
+  } catch(e) {
+    logOutput('Python Error: ' + e.message, 'error');
+  }
+}
+
+/* --- TypeScript Runner --- */
+function runTypeScript(code) {
+  try {
+    var result = ts.transpileModule(code, {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, strict: false, removeComments: false }
+    });
+    if (result.diagnostics && result.diagnostics.length > 0) {
+      result.diagnostics.forEach(function(d) {
+        var msg = ts.flattenDiagnosticMessageText(d.messageText, '\n');
+        logOutput('TS Error: ' + msg, 'error');
+      });
+    }
+    logOutput('// Transpiled JavaScript:', 'info');
+    logOutput(result.outputText, 'code');
+    logOutput('// Running transpiled code...', 'info');
+    runJavaScript(result.outputText);
+  } catch(e) {
+    logOutput('TypeScript Error: ' + e.message, 'error');
+  }
+}
+
+/* --- SQL Runner --- */
+async function runSql(code) {
+  if (!sqlJs) {
+    logOutput('Loading SQL.js engine...', 'info');
+    try {
+      sqlJs = await initSqlJs({ locateFile: function(file) { return 'https://sql.js.org/dist/' + file; } });
+      logOutput('SQL engine ready!', 'success');
+    } catch(e) {
+      logOutput('Failed to load SQL engine: ' + e.message, 'error');
+      return;
+    }
+  }
+  try {
+    var db = new sqlJs.Database();
+    var statements = code.split(';').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+    var hasResults = false;
+    statements.forEach(function(stmt) {
+      try {
+        var results = db.exec(stmt);
+        if (results && results.length > 0) {
+          hasResults = true;
+          results.forEach(function(result) { logOutput(formatSqlTable(result), 'table'); });
+        }
+      } catch(stmtErr) {
+        logOutput('SQL Error: ' + stmtErr.message, 'error');
+      }
+    });
+    if (!hasResults) logOutput('Statements executed. (No result set)', 'success');
+  } catch(e) {
+    logOutput('SQL Error: ' + e.message, 'error');
+  }
+}
+
+function formatSqlTable(result) {
+  if (!result.columns || !result.values) return 'Empty result';
+  var html = '<table class="sql-table"><thead><tr>';
+  result.columns.forEach(function(col) { html += '<th>' + escapeHtml(String(col)) + '</th>'; });
+  html += '</tr></thead><tbody>';
+  result.values.forEach(function(row) {
+    html += '<tr>';
+    row.forEach(function(cell) { html += '<td>' + escapeHtml(cell === null ? 'NULL' : String(cell)) + '</td>'; });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+/* --- JSON Runner --- */
+function runJson(code) {
+  try {
+    var obj = JSON.parse(code);
+    logOutput(JSON.stringify(obj, null, 2), 'code');
+    logOutput('Valid JSON - parsed successfully!', 'success');
+  } catch(e) {
+    logOutput('JSON Error: ' + e.message, 'error');
+  }
+}
+
+/* --- Markdown Runner --- */
+function runMarkdown(code) {
+  var html = marked.parse(code);
+  els.previewFrame.srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
+    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:24px;line-height:1.6;color:#24292e;max-width:800px;margin:0 auto}' +
+    'h1,h2,h3,h4{margin-top:24px;margin-bottom:16px;font-weight:600;line-height:1.25}' +
+    'h1{font-size:2em;border-bottom:1px solid #eaecef;padding-bottom:.3em}' +
+    'h2{font-size:1.5em;border-bottom:1px solid #eaecef;padding-bottom:.3em}' +
+    'code{font-family:"SFMono-Regular",Consolas,monospace;background:rgba(27,31,35,.05);padding:.2em .4em;border-radius:3px;font-size:85%}' +
+    'pre{background:#f6f8fa;padding:16px;border-radius:6px;overflow-x:auto}' +
+    'pre code{background:none;padding:0}' +
+    'blockquote{margin:0;padding:0 1em;color:#6a737d;border-left:.25em solid #dfe2e5}' +
+    'table{border-collapse:collapse;width:100%;margin:16px 0}' +
+    'th,td{border:1px solid #dfe2e5;padding:6px 13px}' +
+    'th{background:#f6f8fa}tr:nth-child(2n){background:#f6f8fa}' +
+    'img{max-width:100%}a{color:#0366d6;text-decoration:none}' +
+    'a:hover{text-decoration:underline}' +
+    '</style></head><body>' + html + '</body></html>';
+  showPreviewPanel();
+  logOutput('Markdown rendered in preview panel.', 'success');
+}
+
+/* --- HTML Runner --- */
+function runHtml(code) {
+  els.previewFrame.srcdoc = code;
+  showPreviewPanel();
+  logOutput('HTML rendered in preview panel.', 'success');
+}
+
+/* --- CSS Runner --- */
+function runCss(code) {
+  var safeCss = code.replace(/<\/style>/gi, '<\\/style>');
+  var previewHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
+    'body{margin:0;padding:24px;font-family:system-ui,-apple-system,sans-serif;background:#fff;color:#333}' +
+    '.demo-container{max-width:600px}h1,h2,h3{margin-top:0}' +
+    '.card{border:1px solid #ddd;padding:16px;border-radius:8px;margin:12px 0}' +
+    'button{padding:8px 16px;margin:4px;cursor:pointer}' +
+    'input,textarea{padding:8px;margin:4px}ul{margin:8px 0}' +
+    '</style><style>' + safeCss + '</style></head><body>' +
+    '<div class="demo-container"><h1>CSS Preview</h1>' +
+    '<p>This paragraph contains <a href="#">a link</a> and <strong>bold text</strong>.</p>' +
+    '<div class="card"><h3>Card Component</h3><p>Card content goes here.</p><button>Primary</button><button>Secondary</button></div>' +
+    '<form><input type="text" placeholder="Input" value="Sample"><textarea rows="3">Textarea</textarea></form>' +
+    '<ul><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul></div></body></html>';
+  els.previewFrame.srcdoc = previewHtml;
+  showPreviewPanel();
+  logOutput('CSS applied to preview panel.', 'success');
+}
+
+/* --- Lua Runner --- */
+function runLua(code) {
+  try {
+    if (typeof fengari === 'undefined') {
+      throw new Error('Fengari (Lua runtime) not loaded. Check internet connection.');
+    }
+    var originalLog = console.log;
+    var logs = [];
+    console.log = function() {
+      logs.push(Array.prototype.slice.call(arguments).map(function(a) { return String(a); }).join('\t'));
+      originalLog.apply(console, arguments);
+    };
+    if (fengari.load) {
+      fengari.load(code)();
+      if (logs.length > 0) logs.forEach(function(line) { logOutput(line, 'log'); });
+      logOutput('Lua execution completed.', 'success');
+    } else {
+      logOutput('Lua execution not available in this build.', 'warn');
+    }
+    console.log = originalLog;
+  } catch(e) {
+    logOutput('Lua Error: ' + e.message, 'error');
+  }
+}
+
+/* --- C Runner --- */
+function runC(code) {
+  logOutput('C / C++ compilation requires a backend compiler.', 'warn');
+  logOutput('This editor provides full syntax highlighting and file management for C/C++.', 'info');
+  logOutput('Suggested online compilers:', 'info');
+  logOutput('- Online GDB (onlinegdb.com)', 'info');
+  logOutput('- Godbolt Compiler Explorer (godbolt.org)', 'info');
+}
+
+/* ---------- Boot ---------- */
+window.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
